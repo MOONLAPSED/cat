@@ -6,11 +6,5 @@ SHELL ["/bin/bash", "-c"]
 WORKDIR /cat/
 RUN apt-get update && \
     apt-get install -y python3-pip && \
-    python -m pip install --upgrade pip && \
+    python3 -m pip install --upgrade pip && \
     pip install -r requirements.txt
-
-RUN adduser --uid 5678 --disabled-password --gecos "" appuser \
-    && chown -R appuser /app \
-    && chmod -R 755 /app
-# Switch user to non-root user
-USER appuser
