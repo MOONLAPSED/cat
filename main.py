@@ -1,12 +1,9 @@
-import requests
-import numpy as np
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
 from time import time
 from src.cat import FileTypeSelector
-
-
+from pydantic import BaseModel, Field
+from datetime import datetime, date
+from dotenv import load_dotenv
 
 def main():
     fs = FileTypeSelector(directory=".", file_extension="md")
@@ -51,19 +48,36 @@ def main():
         print("@" * 50)
 
 
-if __name__ == "__main__":
-    from pydantic import BaseModel, Field
-    from datetime import datetime, date
-    from dotenv import load_dotenv
-    load_dotenv
+class MySettings(BaseModel):
+    required_date: date = Field(default_factory=datetime.now().date)
+    required_int: int = Field(0, ge=0)  # Set default value here
+    state: int = Field(0)  # New field to hold the state value
 
-    class MySettings(BaseModel):
-        required_int: int = Field(0, ge=0)
-        required_str: str = "hello world"
-        required_date: date = Field(default_factory=datetime.now().date)
+    def __init__(self):
+        super().__init__()
+        try:
+            self.required_int = int(os.getenv("REQUIRED_INT", default=0))
+            self.state = int(os.getenv("STATE", default=0))  # Load 'state' from .env file
+        except ValueError:
+            pass  # Use the default value
+
+if __name__ == "__main__":
+    load_dotenv()  # Load environment variables
+
+    settings = MySettings()
+    settings.state = 1  # Set the state to 1
     
-    MainSettings = MySettings()
-    assert MainSettings.required_int == 0
-    assert MainSettings.required_str == "hello world"
-    print(MainSettings.required_date)
+    with open('.env', 'w') as env_file:
+        env_file.write(f"STATE={settings.state}\n")  # Update state in .env file
+    
+    fs = FileTypeSelector(directory=".", file_extension="md")
+    file_dict = fs.select_files()
+    
+    # Rest of your code remains unchanged
+
     main()
+
+    # Update state to 0 after main() completes
+    settings.state = 0
+    with open('.env', 'w') as env_file:
+        env_file.write(f"STATE={settings.state}\n")
