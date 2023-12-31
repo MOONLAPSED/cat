@@ -58,8 +58,10 @@ class MySettings(BaseModel):
         try:
             self.required_int = int(os.getenv("REQUIRED_INT", default=0))
             self.state = int(os.getenv("STATE", default=0))  # Load 'state' from .env file
-        except ValueError:
-            pass  # Use the default value
+        except ValueError as e:
+            # Handle or log the error if loading the environment variable encounters an issue
+            print(f"Error loading environment variable: {e}")
+            # You might want to consider setting a default value here or handling this error scenario
 
 if __name__ == "__main__":
     load_dotenv()  # Load environment variables
@@ -67,17 +69,15 @@ if __name__ == "__main__":
     settings = MySettings()
     settings.state = 1  # Set the state to 1
     
-    with open('.env', 'w') as env_file:
-        env_file.write(f"STATE={settings.state}\n")  # Update state in .env file
-    
-    fs = FileTypeSelector(directory=".", file_extension="md")
-    file_dict = fs.select_files()
-    
-    # Rest of your code remains unchanged
-
-    main()
-
-    # Update state to 0 after main() completes
-    settings.state = 0
+    # Update state in .env file
     with open('.env', 'w') as env_file:
         env_file.write(f"STATE={settings.state}\n")
+
+    try:
+        main()
+    finally:
+        # Update state to 0 after main() completes
+        settings.state = 0
+        # Update state in .env file
+        with open('.env', 'w') as env_file:
+            env_file.write(f"STATE={settings.state}\n")
