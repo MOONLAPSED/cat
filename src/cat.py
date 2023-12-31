@@ -55,3 +55,16 @@ class FileTypeSelector:
             self.logger.info(f"No files found with extension '{self.file_extension}'")
 
         return file_dict
+
+    def count_files(self):
+        """
+        Counts the total number of files in the specified directory and its subdirectories.
+
+        Returns:
+            Total number of files.
+        """
+        count = 0
+        for _, _, files in os.walk(self):
+            count += len(files)
+        return count
+    

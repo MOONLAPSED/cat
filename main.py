@@ -1,16 +1,21 @@
 import requests
 import numpy as np
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from time import time
+from src.cat import FileTypeSelector
+
+
 
 def main():
-    from time import time
-    from src.cat import FileTypeSelector
     fs = FileTypeSelector(directory=".", file_extension="md")
     file_dict = fs.select_files()
     
-    max_processing_time = 5  # Maximum allowed processing time in seconds
-    max_chars = 2_000_000  # Maximum allowed characters
+    total_elapsed_time = 0  # Initialize total elapsed time variable
+    total_files = FileTypeSelector.count_files(fs.directory)
+    start_time = time()
+    max_processing_time = 5  # Set maximum allowed processing time per file
     
     for file_path, file_content in file_dict.items():
         print("#" * 50)
@@ -18,24 +23,25 @@ def main():
         print("#" * 50)
         print("File Content:")
         
-        start_time = time()
-        
         try:
-            # Get the first 200 characters of the content
-            content_start = file_content[:200]  
+            content_start = file_content[:200]  # Get the first 200 characters of the content
             
-            # Check if the content exceeds the character limit
-            if len(file_content) > max_chars:
-                content_start = file_content[:max_chars]
-                print("File truncated due to character limit:", file_path)
-                
-            # Check elapsed time and break if it exceeds the maximum allowed time
             elapsed_time = time() - start_time
             if elapsed_time > max_processing_time:
                 print(f"Timeout exceeded for file: {file_path}. Skipping...")
                 continue
             
+            total_elapsed_time += elapsed_time
+            time_per_file = total_elapsed_time / total_files
+            
+            if time_per_file > max_processing_time:
+                print("Processing time exceeded. Skipping remaining files.")
+                break
+
             print("%s" % content_start)
+            print(f"Elapsed time: {elapsed_time} seconds")
+            print(f"Time per file: {time_per_file} seconds")
+
         except Exception as e:
             print(f"Error reading file: {file_path}")
             print(f"Error message: {str(e)}")
