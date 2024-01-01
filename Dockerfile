@@ -15,5 +15,4 @@ RUN apt-get update && \
 # ENTRYPOINT ["python3", "main.py"]
 
 ENTRYPOINT ["jupyter", "notebook", "--ip='0.0.0.0'", "--port=8888", "--no-browser", "--allow-root"]
-# docker run -p 8888:8888 -t my_jupyter_container
 # docker run -d -p 8888:8888 jpt:latest

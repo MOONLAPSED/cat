@@ -46,7 +46,10 @@ def main():
         print("@" * 50)
         print("File Path:   %s" % file_path)
         print("@" * 50)
-
+    print("=" * 50)
+    print(f"Total elapsed time: {total_elapsed_time} seconds")
+    print(f"Average time per file: {total_elapsed_time / total_files} seconds")
+    return file_dict
 
 class MySettings(BaseModel):
     required_date: date = Field(default_factory=datetime.now().date)
