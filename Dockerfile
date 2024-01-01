@@ -1,10 +1,19 @@
 FROM ghcr.io/ai-dock/jupyter-pytorch:2.1.0-py3.11-cuda-11.8.0-cudnn8-devel-22.04
-COPY . ./cat/
-COPY .env .env
-COPY requirements.txt .
-SHELL ["/bin/bash", "-c"]
-WORKDIR /cat/
+
+COPY . /cat/
+WORKDIR /cat
+
+
+# Run package installation with root permissions
 RUN apt-get update && \
-    apt-get install -y python3-pip && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip && \
     python3 -m pip install --upgrade pip && \
     pip install -r requirements.txt
+# DEBIAN_FRONTEND=noninteractive environment variable is set to prevent interactive prompts during package installations.
+
+
+# ENTRYPOINT ["python3", "main.py"]
+
+ENTRYPOINT ["jupyter", "notebook", "--ip='0.0.0.0'", "--port=8888", "--no-browser", "--allow-root"]
+# docker run -p 8888:8888 -t my_jupyter_container
+# docker run -d -p 8888:8888 jpt:latest
