@@ -1,4 +1,4 @@
-FROM ghcr.io/ai-dock/jupyter-pytorch:2.1.0-py3.11-cuda-11.8.0-cudnn8-devel-22.04
+FROM ghcr.io/ai-dock/jupyter-pytorch:2.1.1-py3.11-cuda-11.8.0-cudnn8-devel-22.04
 
 COPY . /cat/
 WORKDIR /cat
