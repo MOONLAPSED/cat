@@ -5,6 +5,5 @@ ipykernel
 openai
 numpy
 pandas
-typing
 pydantic
 matplotlib

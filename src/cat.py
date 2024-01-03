@@ -68,3 +68,13 @@ class FileTypeSelector:
             count += len(files)
         return count
     
+    def get_file_stats(file_path):
+        return {
+            'size': os.path.getsize(file_path),
+            'permissions': os.stat(file_path).st_mode,
+            'uid': os.stat(file_path).st_uid,
+            'gid': os.stat(file_path).st_gid,
+            'atime': os.stat(file_path).st_atime,
+            'mtime': os.stat(file_path).st_mtime,
+            'ctime': os.stat(file_path).st_ctime,
+        }
