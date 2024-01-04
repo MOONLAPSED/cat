@@ -1,136 +1,68 @@
-import json
-from dataclasses import dataclass
-from enum import Enum
-from datetime import datetime
-from typing import Optional
 import os
-
-
-class FileType(Enum):
-    REGULAR_FILE = 'regular file'
-    DIRECTORY = 'directory'
+from dataclasses import dataclass, field
+from typing import Optional, Annotated, Literal, Any
+from datetime import datetime
+from enum import Enum
 
 
 @dataclass
 class UnixFilesystem:
-    _inode: int
-    _pathname: str
-    _filetype: FileType
-    _permissions: int
-    _owner: int
-    _group_id: int
-    _PID: int
-    _unit_file: str
-    _unit_file_addr: str
-    _size: int
-    _mtime: int
-    _atime: int
-    _ctime: int
-    _links_count: int
-    _blocks: int
-    _block_size: int
-
+    inode: Optional[int] = None
+    pathname: str = field(default='')
+    permissions: Literal[0o400, 0o600, 0o111] = field(default=None)
+    filetype: Literal['file', 'directory']
+    owner: Optional[int] = None
+    group_id: Optional[int] = None
+    pid: Optional[int] = None
+    size: Optional[int] = None
+    mtime: datetime = field(default_factory=datetime.now)
+    atime: datetime = field(default_factory=datetime.now)
+    ctime: datetime = field(default_factory=datetime.now)
+    links_count: Optional[int] = None
+    blocks: Optional[int] = None
+    block_size: Optional[int] = None
+    unit_file: Optional[Any] = None  #simd
+    unit_file_addr: Optional[Any] = None  # simd
     def __repr__(self):
-        return f"UnixFilesystem(inode={self._inode}, pathname={self._pathname}, filetype={self._filetype}, " \
-               f"permissions={self._permissions}, owner={self._owner}, group_id={self._group_id}, " \
-               f"PID={self._PID}, unit_file={self._unit_file}, unit_file_addr={self._unit_file_addr}, " \
-               f"size={self._size}, mtime={self._mtime}, atime={self._atime}, ctime={self._ctime}, " \
-               f"links_count={self._links_count}, blocks={self._blocks}, block_size={self._block_size})"
+        permissions_str = self._permissions_to_string(self.permissions)
+        return (f"UnixFilesystem(inode={self.inode}, pathname='{self.pathname}', "
+                f"filetype={self.filetype.value}, permissions={permissions_str}, owner={self.owner}, "
+                f"group_id={self.group_id}, pid={self.pid}, size={self.size}, mtime={self.mtime}, "
+                f"atime={self.atime}, ctime={self.ctime}, links_count={self.links_count}, "
+                f"blocks={self.blocks}, block_size={self.block_size})")
 
-    @property
-    def inode(self) -> int:
-        return self._inode
+    @staticmethod
+    def _permissions_to_string(permissions: Optional[int]) -> str:
+        if permissions is None:
+            return '---'
+        modes = [
+            permissions & 0o400, permissions & 0o200, permissions & 0o100,
+            permissions & 0o040, permissions & 0o020, permissions & 0o010,
+            permissions & 0o004, permissions & 0o002, permissions & 0o001,
+        ]
+        rwx = ['r', 'w', 'x']
+        permissions_str = ''.join([
+            rwx[i] if modes[i] else '-'
+            for i in range(9)
+        ])
+        return permissions_str
 
-    @inode.setter
-    def inode(self, value: int) -> None:
-        self._inode = value
-
-    @property
-    def pathname(self) -> str:
-        return self._pathname
-
-    @pathname.setter
-    def pathname(self, value: str) -> None:
-        self._pathname = value
-
-    @property
-    def filetype(self) -> FileType:
-        return self._filetype
-
-    @filetype.setter
-    def filetype(self, value: FileType) -> None:
-        self._filetype = value
-
-    # Implement getters and setters for other attributes similarly
-
-    def to_json(self, file_path: str) -> None:
-        attributes = {
-            "inode": self._inode,
-            "pathname": self._pathname,
-            "filetype": self._filetype.value,
-            # Include other attributes
-        }
-        with open(file_path, 'w') as json_file:
-            json.dump(attributes, json_file)
-
-    @classmethod
-    def from_json(cls, file_path: str) -> Optional['UnixFilesystem']:
-        try:
-            with open(file_path, 'r') as json_file:
-                data = json.load(json_file)
-                return cls(
-                    _inode=data["inode"],
-                    _pathname=data["pathname"],
-                    _filetype=FileType[data["filetype"]],
-                    # Initialize other attributes from JSON data
-                )
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"Error reading file: {e}")
-            return None
-
-    # Other methods...
-
-# Usage example:
-
-# Write object attributes to a JSON file
-ufs = UnixFilesystem(
-    _inode=123456789,
-    _pathname="/home/user/file.txt",
-    _filetype=FileType.REGULAR_FILE,
-    # Include other attributes
-)
-ufs.to_json("unix_filesystem.json")
-
-# Read object attributes from the JSON file
-loaded_ufs = UnixFilesystem.from_json("unix_filesystem.json")
-if loaded_ufs:
-    print(loaded_ufs)
-
-import os
-from typing import Generator
-
-class UnixFilesystemGenerator:
-    def __init__(self, directory: str = './'):
-        self.directory = directory
-
-    def generate_filesystem_info(self) -> Generator:
-        for root, dirs, files in os.walk(self.directory):
-            for file_name in files:
-                file_path = os.path.join(root, file_name)
-                try:
-                    file_stats = os.stat(file_path)
-                    yield {
-                        "file_path": file_path,
-                        "file_stats": file_stats
-                        # Include other attributes from os.stat() as needed
-                    }
-                except OSError as e:
-                    print(f"Error accessing file {file_path}: {e}")
-
-# Usage example:
-generator = UnixFilesystemGenerator(directory='/path/to/directory')
-file_system_info = generator.generate_filesystem_info()
-
-for file_info in file_system_info:
-    print(f"File: {file_info['file_path']}")
-    print(f"Stats: {file_info['file_stats']}")
+# Function to create UnixFilesystem instances from os.stat
+def create_unix_filesystem(path: str) -> UnixFilesystem:
+    stat_info = os.stat(path)
+    return UnixFilesystem(
+        inode=stat_info.st_ino,
+        pathname=path,
+        filetype= 'file' if stat_info.st_mode & 0o40000 else 'directory',
+        permissions=stat_info.st_mode & 0o777,  # To extract permission bits
+        owner=stat_info.st_uid,
+        group_id=stat_info.st_gid,
+        pid=os.getpid(),
+        size=stat_info.st_size,
+        mtime=datetime.fromtimestamp(stat_info.st_mtime),
+        atime=datetime.fromtimestamp(stat_info.st_atime),
+        ctime=datetime.fromtimestamp(stat_info.st_ctime),
+        links_count=stat_info.st_nlink,
+        blocks=stat_info.st_blocks,
+        block_size=stat_info.st_blksize
+    )

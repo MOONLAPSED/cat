@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime, date
 from dotenv import load_dotenv
 
+from src.ufx import main as ufx_main
+
 def main():
     fs = FileTypeSelector(directory=".", file_extension="md")
     file_dict = fs.select_files()
@@ -84,3 +86,4 @@ if __name__ == "__main__":
         # Update state in .env file
         with open('.env', 'w') as env_file:
             env_file.write(f"STATE={settings.state}\n")
+    ufx_main()
